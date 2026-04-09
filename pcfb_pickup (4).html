@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>PCFB — Inventory</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f4f4;min-height:100vh;padding:0 0 40px}
+.header{background:#C0392B;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.header-logo{width:38px;height:38px;background:rgba(255,255,255,0.18);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.header-text{flex:1}
+.header h1{font-size:16px;font-weight:700;line-height:1.2}
+.header p{font-size:11px;opacity:.8;margin-top:2px}
+.lock-pill{display:flex;align-items:center;gap:5px;padding:6px 11px;border:1.5px solid rgba(255,255,255,0.55);border-radius:20px;background:transparent;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.mode-bar{display:flex;background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:66px;z-index:15}
+.mode-tab{flex:1;padding:11px 4px;text-align:center;font-size:12px;font-weight:600;color:#bbb;cursor:pointer;border-bottom:3px solid transparent;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.mode-tab .tab-lock{font-size:11px}
+.mode-tab.active{color:#C0392B;border-bottom-color:#C0392B}
+.mode-tab.unlocked-tab{color:#555}
+.container{max-width:480px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:20px;margin-bottom:16px}
+.section-title{font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px}
+label{display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:6px}
+select,input[type=text],input[type=number],input[type=password],input[type=email],textarea{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-family:Arial,sans-serif;color:#333;background:#fff;appearance:none;-webkit-appearance:none;outline:none;transition:border-color .2s}
+select:focus,input:focus,textarea:focus{border-color:#C0392B}
+.field{margin-bottom:16px}
+.item-card{border:1.5px solid #e0e0e0;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.item-card:hover{border-color:#C0392B;background:#fef9f9}
+.item-card.selected{border-color:#C0392B;background:#fdf2f2}
+.item-card.rm:hover{border-color:#1e8449;background:#f0faf4}
+.item-card.rm.selected{border-color:#1e8449;background:#eafaf1}
+.item-dot{width:14px;height:14px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;transition:all .15s}
+.item-card.selected .item-dot{background:#C0392B;border-color:#C0392B}
+.item-card.rm.selected .item-dot{background:#1e8449;border-color:#1e8449}
+.item-info{flex:1}
+.item-name{font-size:15px;font-weight:600;color:#222}
+.item-meta{font-size:12px;color:#888;margin-top:2px}
+.stock-badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.ok{background:#d5f5e3;color:#1e8449}
+.low{background:#fdebd0;color:#e67e22}
+.reorder{background:#fad7a0;color:#d35400}
+.out{background:#fadbd8;color:#c0392b}
+.qty-row{display:flex;align-items:center;gap:12px}
+.qty-btn{width:44px;height:44px;border-radius:8px;border:1.5px solid #ddd;background:#f8f8f8;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:600;color:#555;flex-shrink:0}
+.qty-btn:active{background:#e8e8e8}
+.qty-input{text-align:center;font-size:18px;font-weight:700;width:70px;flex-shrink:0}
+.submit-btn{width:100%;padding:16px;border:none;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer;transition:background .2s;color:#fff;background:#C0392B}
+.submit-btn:hover{background:#a93226}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed}
+.submit-btn.green{background:#1e8449}
+.submit-btn.green:hover{background:#196f3d}
+.ghost-btn{width:100%;margin-top:10px;padding:13px;background:transparent;border:1.5px solid #ddd;border-radius:10px;color:#888;font-size:14px;cursor:pointer;font-family:Arial,sans-serif}
+.success-screen{display:none;text-align:center;padding:30px 20px}
+.success-icon{width:70px;height:70px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.si-green{background:#d5f5e3}.si-blue{background:#d6eaf8}
+.success-icon svg{width:36px;height:36px}
+.success-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.success-detail{font-size:15px;color:#555;margin-bottom:24px;line-height:1.6}
+.another-btn{padding:12px 26px;border:2px solid #C0392B;color:#C0392B;background:#fff;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin:5px}
+.another-btn.blue{border-color:#2471a3;color:#2471a3}
+.error-msg{background:#fdf2f2;border:1px solid #f5b7b1;color:#c0392b;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{padding:7px 14px;border:1.5px solid #ddd;border-radius:20px;font-size:13px;cursor:pointer;transition:all .15s;background:#fff;color:#444}
+.chip.active{border-color:#C0392B;background:#fdf2f2;color:#C0392B;font-weight:600}
+.chip.gactive{border-color:#1e8449;background:#eafaf1;color:#1e8449;font-weight:600}
+.status-bar{display:flex;gap:10px;margin-bottom:16px}
+.stat{flex:1;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:24px;font-weight:700;color:#C0392B}
+.stat-lbl{font-size:11px;color:#888;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.search-box{position:relative;margin-bottom:14px}
+.search-box input{padding-left:38px}
+.si-pos{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#aaa;font-size:16px;pointer-events:none}
+.no-results{text-align:center;color:#aaa;font-size:14px;padding:20px}
+.config-note{background:#eaf4fb;border:1px solid #aed6f1;border-radius:8px;padding:12px 14px;font-size:13px;color:#1a5276;margin-bottom:16px;line-height:1.6}
+.config-note strong{display:block;margin-bottom:4px}
+.restock-info{background:#eafaf1;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e8449;margin-bottom:16px}
+.hidden{display:none!important}
+/* PIN */
+.pin-overlay{background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:28px 24px;text-align:center;margin-bottom:16px}
+.pin-badge{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:14px;letter-spacing:.4px}
+.pin-badge.pickup{background:#fdf2f2;color:#C0392B}
+.pin-badge.restock{background:#eafaf1;color:#1e8449}
+.pin-badge.admin{background:#eaf2fb;color:#2471a3}
+.pin-overlay h2{font-size:18px;font-weight:700;color:#333;margin-bottom:4px}
+.pin-overlay p{font-size:13px;color:#888;margin-bottom:20px}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:24px}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid #ddd;transition:all .2s}
+.pin-dot.filled{background:#555;border-color:#555}
+.pin-dot.filled.c-red{background:#C0392B;border-color:#C0392B}
+.pin-dot.filled.c-green{background:#1e8449;border-color:#1e8449}
+.pin-dot.filled.c-blue{background:#2471a3;border-color:#2471a3}
+.pin-dot.err{background:#C0392B;border-color:#C0392B}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto}
+.pin-key{padding:15px;border:1.5px solid #ddd;border-radius:10px;font-size:20px;font-weight:600;cursor:pointer;background:#fff;color:#333;transition:all .15s;text-align:center;font-family:Arial,sans-serif}
+.pin-key:active{background:#f0f0f0;transform:scale(0.96)}
+.pin-err{color:#C0392B;font-size:13px;margin-top:14px;min-height:18px}
+.pin-hint{margin-top:16px;font-size:11px;color:#ccc}
+/* History */
+.history-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:10px}
+.history-row:last-child{border-bottom:none}
+.h-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:700}
+.h-pickup{background:#fadbd8;color:#c0392b}.h-restock{background:#d6eaf8;color:#2471a3}
+.h-body{flex:1}.h-name{font-size:14px;font-weight:600;color:#222}
+.h-meta{font-size:12px;color:#888;margin-top:2px}
+.h-qty{font-size:14px;font-weight:700}.h-minus{color:#c0392b}.h-plus{color:#1e8449}
+/* Admin settings */
+.settings-section{background:#f9f9f9;border-radius:10px;border:1px solid #eee;padding:16px;margin-bottom:14px}
+.settings-section-title{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.pin-row{display:flex;gap:8px;align-items:center}
+.pin-row input{flex:1}
+.inline-btn{padding:10px 14px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;color:#fff;font-family:Arial,sans-serif}
+.inline-btn.red{background:#C0392B}.inline-btn.green{background:#1e8449}.inline-btn.blue{background:#2471a3}
+.inline-btn.amber{background:#d68910}
+.msg{font-size:12px;margin-top:6px;min-height:16px}
+.access-level-card{border:1.5px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.access-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.access-info{flex:1}.access-name{font-size:14px;font-weight:600;color:#222}
+.access-desc{font-size:12px;color:#888;margin-top:2px}
+.access-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px}
+/* Alert settings */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.toggle-row:last-child{border-bottom:none}
+.toggle-label{font-size:14px;color:#333}
+.toggle-sub{font-size:12px;color:#888;margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ddd;border-radius:24px;transition:.2s}
+.toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+input:checked+.toggle-slider{background:#1e8449}
+input:checked+.toggle-slider:before{transform:translateX(20px)}
+.alert-preview{background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:12px 14px;font-size:12px;color:#7d6608;line-height:1.6;margin-top:10px}
+.alert-preview strong{display:block;margin-bottom:4px;font-size:13px}
+.email-tag{display:inline-block;background:#eaf2fb;color:#2471a3;border:1px solid #aed6f1;border-radius:14px;padding:3px 10px;font-size:12px;font-weight:600;margin:3px 3px 3px 0}
+.email-tag .rm-tag{margin-left:5px;cursor:pointer;opacity:.6;font-size:11px}
+.email-tag .rm-tag:hover{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">CFA</div>
+  <div class="header-text">
+    <h1 id="headerTitle">PCFB Inventory</h1>
+    <p>Point Cook CFA</p>
+  </div>
+  <button class="lock-pill" onclick="lockAll()">&#128274; Lock All</button>
+</div>
+
+<div class="mode-bar">
+  <div class="mode-tab" id="tabPickup"  onclick="tabClick('pickup')"><span>Pickup</span><span class="tab-lock" id="tlPickup">&#128274;</span></div>
+  <div class="mode-tab" id="tabRestock" onclick="tabClick('restock')"><span>Restock</span><span class="tab-lock" id="tlRestock">&#128274;</span></div>
+  <div class="mode-tab" id="tabLog"     onclick="tabClick('log')"><span>Log</span><span class="tab-lock" id="tlLog">&#128274;</span></div>
+</div>
+
+<div class="container">
+
+  <div class="config-note hidden" id="configNote">
+    <strong>Setup required — Google Sheets sync</strong>
+    Paste your Google Apps Script Web App URL to enable live sync and email alerts.
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <input type="text" id="scriptUrlBanner" placeholder="https://script.google.com/macros/s/AKfycbwHxi6VQfV845tXH4eFIG3kMjhvJ6R9zgzZfLTCGYlz7y5dHfRipfMwLLG0V4rEd5E/exec"/>
+      <button onclick="saveScript('banner')" style="padding:8px 14px;background:#C0392B;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600">Save</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="stat"><div class="stat-num" id="statTotal">12</div><div class="stat-lbl">Items</div></div>
+    <div class="stat"><div class="stat-num" id="statLow" style="color:#e67e22">0</div><div class="stat-lbl">Low Stock</div></div>
+    <div class="stat"><div class="stat-num" id="statOut" style="color:#c0392b">0</div><div class="stat-lbl">Out of Stock</div></div>
+  </div>
+
+  <!-- Landing -->
+  <div id="landingMode">
+    <div class="card" style="text-align:center;padding:32px 24px">
+      <div style="font-size:36px;margin-bottom:12px">&#128274;</div>
+      <div style="font-size:17px;font-weight:700;color:#333;margin-bottom:8px">Select a tab to continue</div>
+      <div style="font-size:13px;color:#888;line-height:1.6">Each tab requires a PIN.<br>Contact your brigade admin if you don't have access.</div>
+    </div>
+  </div>
+
+  <!-- PIN overlay -->
+  <div id="pinOverlay" class="hidden">
+    <div class="pin-overlay">
+      <div class="pin-badge" id="pinBadge">Pickup</div>
+      <h2 id="pinTitle">Enter PIN</h2>
+      <p id="pinSubtitle">Enter your 4-digit PIN to access this section</p>
+      <div class="pin-dots">
+        <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="pinPress('1')">1</button><button class="pin-key" onclick="pinPress('2')">2</button><button class="pin-key" onclick="pinPress('3')">3</button>
+        <button class="pin-key" onclick="pinPress('4')">4</button><button class="pin-key" onclick="pinPress('5')">5</button><button class="pin-key" onclick="pinPress('6')">6</button>
+        <button class="pin-key" onclick="pinPress('7')">7</button><button class="pin-key" onclick="pinPress('8')">8</button><button class="pin-key" onclick="pinPress('9')">9</button>
+        <button class="pin-key" onclick="pinPress('cancel')" style="font-size:12px;color:#999">Cancel</button>
+        <button class="pin-key" onclick="pinPress('0')">0</button>
+        <button class="pin-key" onclick="pinPress('del')" style="font-size:15px;color:#888">&#9003;</button>
+      </div>
+      <div class="pin-err" id="pinErr"></div>
+      <div class="pin-hint" id="pinHint"></div>
+    </div>
+  </div>
+
+  <!-- ══ PICKUP ══ -->
+  <div id="pickupMode" class="hidden">
+    <div id="pickupForm">
+      <div class="card">
+        <div class="section-title">1 — Select item</div>
+        <div class="search-box"><span class="si-pos">&#128269;</span><input type="text" id="pSearch" placeholder="Search items..." oninput="renderItems('p')"/></div>
+        <div id="pList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">2 — Pickup details</div>
+        <div class="field"><label>Quantity taken</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="chQty('p',-1)">&#8722;</button>
+            <input type="number" id="pQty" class="qty-input" value="1" min="1"/>
+            <button class="qty-btn" onclick="chQty('p',1)">+</button>
+            <span id="pUnit" style="font-size:13px;color:#888;flex:1"></span>
+          </div>
+        </div>
+        <div class="field"><label>Your name</label><input type="text" id="pName" placeholder="e.g. John Smith"/></div>
+        <div class="field"><label>Station / Vehicle</label>
+          <select id="pStation">
+            <option value="">— Select —</option>
+            <option>Station 1</option><option>Station 2</option><option>Tanker 1</option><option>Tanker 2</option><option>Tanker 3</option><option>Command Vehicle</option><option>Support Vehicle</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Purpose</label>
+          <div class="chips" id="purposeChips">
+            <div class="chip" onclick="selChip(this,'purpose','Incident Response')">Incident Response</div>
+            <div class="chip" onclick="selChip(this,'purpose','Training Exercise')">Training Exercise</div>
+            <div class="chip" onclick="selChip(this,'purpose','Community Event')">Community Event</div>
+            <div class="chip" onclick="selChip(this,'purpose','Routine Stock Use')">Routine Stock Use</div>
+            <div class="chip" onclick="selChip(this,'purpose','Other')">Other</div>
+          </div>
+          <input type="text" id="purposeOther" placeholder="Describe purpose..." style="margin-top:10px;display:none"/>
+        </div>
+        <div class="field"><label>Notes <span style="font-weight:400;color:#aaa">(optional)</span></label><textarea id="pNotes" rows="2" style="resize:vertical"></textarea></div>
+      </div>
+      <div class="error-msg" id="pErr"></div>
+      <button class="submit-btn" onclick="submitPickup()" id="pBtn">Log Pickup</button>
+      <button class="ghost-btn" onclick="lockTab('pickup')">&#128274; Lock Pickup</button>
+    </div>
+    <div class="success-screen" id="pSuccess">
+      <div class="success-icon si-green"><svg viewBox="0 0 24 24" fill="none" stroke="#1e8449" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="success-title" style="color:#1e8449">Pickup logged!</div>
+      <div class="success-detail" id="pSuccessDetail"></div>
+      <div id="pAlertNotice" style="display:none;background:#fdf2f2;border:1px solid #f5b7b1;border-radius:8px;padding:10px 14px;font-size:13px;color:#c0392b;margin-bottom:16px;text-align:left"></div>
+      <button class="another-btn" onclick="resetPickup()">Log another pickup</button>
+    </div>
+  </div>
+
+  <!-- ══ RESTOCK ══ -->
+  <div id="restockMode" class="hidden">
+    <div class="restock-info">Restock mode active — stock additions are logged separately.</div>
+    <div id="rForm">
+      <div class="card">
+        <div class="section-title">1 — Select item to restock</div>
+        <div class="search-box"><span class="si-pos">&#128269;</span><input type="text" id="rSearch" placeholder="Search items..." oninput="renderItems('r')"/></div>
+        <div id="rList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">2 — Restock details</div>
+        <div class="field"><label>Quantity added</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="chQty('r',-1)">&#8722;</button>
+            <input type="number" id="rQty" class="qty-input" value="1" min="1"/>
+            <button class="qty-btn" onclick="chQty('r',1)">+</button>
+            <span id="rUnit" style="font-size:13px;color:#888;flex:1"></span>
+          </div>
+        </div>
+        <div class="field"><label>Restocked by</label><input type="text" id="rName" placeholder="e.g. Sarah Lee"/></div>
+        <div class="field"><label>Supplier / Source</label>
+          <div class="chips" id="supplierChips">
+            <div class="chip" onclick="selChip(this,'supplier','State Supply')">State Supply</div>
+            <div class="chip" onclick="selChip(this,'supplier','Local Purchase')">Local Purchase</div>
+            <div class="chip" onclick="selChip(this,'supplier','Donated')">Donated</div>
+            <div class="chip" onclick="selChip(this,'supplier','Station Transfer')">Station Transfer</div>
+            <div class="chip" onclick="selChip(this,'supplier','Other')">Other</div>
+          </div>
+          <input type="text" id="supplierOther" placeholder="Specify source..." style="margin-top:10px;display:none"/>
+        </div>
+        <div class="field"><label>Expiry / Best Before <span style="font-weight:400;color:#aaa">(if applicable)</span></label><input type="text" id="rExpiry" placeholder="e.g. Dec '27 or N/A"/></div>
+        <div class="field"><label>Notes <span style="font-weight:400;color:#aaa">(optional)</span></label><textarea id="rNotes" rows="2" style="resize:vertical"></textarea></div>
+      </div>
+      <div class="error-msg" id="rErr"></div>
+      <button class="submit-btn green" onclick="submitRestock()" id="rBtn">Confirm Restock</button>
+      <button class="ghost-btn" onclick="lockTab('restock')">&#128274; Lock Restock</button>
+    </div>
+    <div class="success-screen" id="rSuccess">
+      <div class="success-icon si-blue"><svg viewBox="0 0 24 24" fill="none" stroke="#2471a3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="success-title" style="color:#2471a3">Restock logged!</div>
+      <div class="success-detail" id="rSuccessDetail"></div>
+      <button class="another-btn blue" onclick="resetRestock()">Restock another item</button>
+      <button class="another-btn" onclick="lockTab('restock')">Done — lock restock</button>
+    </div>
+  </div>
+
+  <!-- ══ LOG / ADMIN ══ -->
+  <div id="logMode" class="hidden">
+    <div class="card">
+      <div class="section-title">Recent activity</div>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- Admin section — hidden until admin PIN -->
+    <div id="adminSection" class="hidden">
+      <div style="background:#eaf2fb;border:1px solid #aed6f1;border-radius:8px;padding:10px 14px;font-size:13px;color:#2471a3;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">&#128737;</span> Admin settings unlocked
+      </div>
+
+      <!-- Access level overview -->
+      <div class="card">
+        <div class="section-title">Access levels</div>
+        <div class="access-level-card"><div class="access-dot" style="background:#C0392B"></div><div class="access-info"><div class="access-name">Pickup PIN</div><div class="access-desc">Log item pickups — general brigade members</div></div><span class="access-badge" style="background:#fdf2f2;color:#C0392B">Level 1</span></div>
+        <div class="access-level-card"><div class="access-dot" style="background:#1e8449"></div><div class="access-info"><div class="access-name">Restock PIN</div><div class="access-desc">Add stock — logistics / supply officers</div></div><span class="access-badge" style="background:#eafaf1;color:#1e8449">Level 2</span></div>
+        <div class="access-level-card"><div class="access-dot" style="background:#888"></div><div class="access-info"><div class="access-name">Log PIN</div><div class="access-desc">View activity log — supervisors / team leaders</div></div><span class="access-badge" style="background:#f4f4f4;color:#888">Level 3</span></div>
+        <div class="access-level-card"><div class="access-dot" style="background:#2471a3"></div><div class="access-info"><div class="access-name">Admin PIN</div><div class="access-desc">Change PINs, email alerts, system config</div></div><span class="access-badge" style="background:#eaf2fb;color:#2471a3">Level 4</span></div>
+      </div>
+
+      <!-- Change PINs -->
+      <div class="card">
+        <div class="section-title">Change PINs</div>
+        <div class="settings-section"><div class="settings-section-title">Pickup PIN (Level 1)</div><div class="pin-row"><input type="password" id="newPickupPin" placeholder="New 4-digit PIN" maxlength="4"/><button class="inline-btn red" onclick="changePin('pickup')">Update</button></div><div class="msg" id="msgPickupPin"></div></div>
+        <div class="settings-section"><div class="settings-section-title">Restock PIN (Level 2)</div><div class="pin-row"><input type="password" id="newRestockPin" placeholder="New 4-digit PIN" maxlength="4"/><button class="inline-btn green" onclick="changePin('restock')">Update</button></div><div class="msg" id="msgRestockPin"></div></div>
+        <div class="settings-section"><div class="settings-section-title">Log PIN (Level 3)</div><div class="pin-row"><input type="password" id="newLogPin" placeholder="New 4-digit PIN" maxlength="4"/><button class="inline-btn" style="background:#555" onclick="changePin('log')">Update</button></div><div class="msg" id="msgLogPin"></div></div>
+        <div class="settings-section"><div class="settings-section-title">Admin PIN (Level 4)</div><div class="pin-row"><input type="password" id="newAdminPin" placeholder="New 4-digit PIN" maxlength="4"/><button class="inline-btn blue" onclick="changePin('admin')">Update</button></div><div class="msg" id="msgAdminPin"></div></div>
+      </div>
+
+      <!-- ══ EMAIL ALERTS ══ -->
+      <div class="card">
+        <div class="section-title">Email alerts</div>
+
+        <!-- Alert recipients -->
+        <div class="settings-section">
+          <div class="settings-section-title">Alert recipients</div>
+          <div style="font-size:13px;color:#888;margin-bottom:10px">Emails will be sent to all addresses below when an alert is triggered.</div>
+          <div id="emailTagList" style="margin-bottom:10px;min-height:10px"></div>
+          <div style="display:flex;gap:8px">
+            <input type="email" id="newEmailInput" placeholder="Add email address..." style="flex:1"/>
+            <button class="inline-btn blue" onclick="addEmail()">Add</button>
+          </div>
+          <div class="msg" id="msgEmail"></div>
+        </div>
+
+        <!-- Alert toggles -->
+        <div class="settings-section">
+          <div class="settings-section-title">Alert triggers</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Low stock alert</div><div class="toggle-sub">Email when item reaches reorder level</div></div>
+            <label class="toggle"><input type="checkbox" id="alertStock" onchange="saveAlertSettings()"/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Out of stock alert</div><div class="toggle-sub">Email when item hits zero</div></div>
+            <label class="toggle"><input type="checkbox" id="alertOut" onchange="saveAlertSettings()"/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Expiry warning</div><div class="toggle-sub">Email 3 weeks before expiry date</div></div>
+            <label class="toggle"><input type="checkbox" id="alertExpiry" onchange="saveAlertSettings()"/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row" style="border-bottom:none">
+            <div><div class="toggle-label">Expired items</div><div class="toggle-sub">Email when an item has passed its expiry</div></div>
+            <label class="toggle"><input type="checkbox" id="alertExpired" onchange="saveAlertSettings()"/><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- Expiry warning window -->
+        <div class="settings-section">
+          <div class="settings-section-title">Expiry warning window</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <input type="number" id="expiryDays" value="21" min="1" max="90" style="width:90px;text-align:center;font-size:16px;font-weight:700" onchange="saveAlertSettings()"/>
+            <span style="font-size:14px;color:#555">days before expiry</span>
+          </div>
+          <div style="font-size:12px;color:#aaa;margin-top:8px">Default is 21 days (3 weeks). Alerts run daily via Google Apps Script scheduler.</div>
+        </div>
+
+        <!-- Alert email preview -->
+        <div class="settings-section">
+          <div class="settings-section-title">How alerts are sent</div>
+          <div class="alert-preview">
+            <strong>&#9993; Example: Low stock alert email</strong>
+            <b>Subject:</b> [PCFB] Stock Alert — 2 items need attention<br><br>
+            <b>REORDER NOW</b><br>
+            &bull; Hydralytes — 3 Packs left (reorder level: 10)<br>
+            &bull; Gloves — 1 Box left (reorder level: 10)<br><br>
+            <b>EXPIRY WARNING (within 21 days)</b><br>
+            &bull; Ration Packs — expires Jul '26<br><br>
+            Sent automatically by PCFB Inventory System
+          </div>
+          <div style="font-size:12px;color:#aaa;margin-top:10px;line-height:1.6">
+            Alerts are checked daily by Google Apps Script at 7:00 AM. The script reads the Inventory sheet and sends one consolidated email per day if any conditions are met — no duplicate emails for the same item.
+          </div>
+        </div>
+
+        <!-- Send test alert -->
+        <div class="settings-section">
+          <div class="settings-section-title">Test alert</div>
+          <div style="font-size:13px;color:#888;margin-bottom:10px">Send a test email to confirm your recipients are receiving alerts correctly.</div>
+          <button class="inline-btn amber" style="width:100%;padding:12px" onclick="sendTestAlert()">&#9993; Send Test Alert Email</button>
+          <div class="msg" id="msgTestAlert"></div>
+        </div>
+      </div>
+
+      <!-- Google Sheets -->
+      <div class="card">
+        <div class="section-title">Google Sheets sync</div>
+        <div class="settings-section">
+          <div class="settings-section-title">Apps Script Web App URL</div>
+          <input type="text" id="scriptUrlAdmin" placeholder="https://script.google.com/macros/s/AKfycbwHxi6VQfV845tXH4eFIG3kMjhvJ6R9zgzZfLTCGYlz7y5dHfRipfMwLLG0V4rEd5E/exec" style="margin-bottom:8px;font-size:13px"/>
+          <button class="inline-btn red" onclick="saveScript('admin')" style="width:100%;padding:11px">Save URL</button>
+          <div class="msg" id="msgScript"></div>
+        </div>
+      </div>
+
+      <button class="ghost-btn" onclick="lockTab('log')">&#128274; Lock Log &amp; Admin</button>
+    </div>
+
+    <div id="logLockBtn"><button class="ghost-btn" onclick="lockTab('log')">&#128274; Lock Log</button></div>
+  </div>
+
+</div>
+
+<script>
+const ITEMS=[
+  {id:"P001",name:"Hydralytes",          cat:"Hydration & Nutrition",unit:"Pack",  stock:5, reorder:10, expiry:"Jul '26"},
+  {id:"P002",name:"Sunscreen",            cat:"PPE Consumables",      unit:"Each",  stock:1, reorder:10, expiry:"Aug '26"},
+  {id:"P003",name:"Ration Packs",         cat:"Hydration & Nutrition",unit:"Pack",  stock:19,reorder:10, expiry:"Aug '27"},
+  {id:"P004",name:"Goggles",              cat:"PPE Consumables",      unit:"Each",  stock:2, reorder:10, expiry:"N/A"},
+  {id:"P005",name:"Sanitizer Wipes",      cat:"Hygiene",              unit:"Pack",  stock:4, reorder:10, expiry:"N/A"},
+  {id:"P006",name:"Hand Wash 250ml",      cat:"Hygiene",              unit:"Bottle",stock:2, reorder:10, expiry:"N/A"},
+  {id:"P007",name:"Hand Sanitizer 60ml",  cat:"Hygiene",              unit:"Bottle",stock:1, reorder:10, expiry:"N/A"},
+  {id:"P008",name:"Gloves",               cat:"PPE Consumables",      unit:"Box",   stock:1, reorder:10, expiry:"N/A"},
+  {id:"P009",name:"Surgical Face Masks",  cat:"PPE Consumables",      unit:"Box",   stock:1, reorder:10, expiry:"N/A"},
+  {id:"P010",name:"P2 Masks",             cat:"PPE Consumables",      unit:"Box",   stock:5, reorder:10, expiry:"N/A"},
+  {id:"P011",name:"Polyestene Wipes",     cat:"Cleaning Supplies",    unit:"Pack",  stock:2, reorder:10, expiry:"Sep '26"},
+  {id:"P012",name:"Female Hygiene Packs", cat:"Hygiene",              unit:"Pack",  stock:1, reorder:10, expiry:"N/A"},
+];
+
+const PINS={
+  pickup: ()=>localStorage.getItem("pcfb_pin_pickup") ||"1234",
+  restock:()=>localStorage.getItem("pcfb_pin_restock")||"5678",
+  log:    ()=>localStorage.getItem("pcfb_pin_log")    ||"9999",
+  admin:  ()=>localStorage.getItem("pcfb_pin_admin")  ||"0000",
+};
+const PIN_META={
+  pickup: {label:"Pickup", cls:"pickup", dotCls:"c-red",   hint:"Default: 1234"},
+  restock:{label:"Restock",cls:"restock",dotCls:"c-green", hint:"Default: 5678"},
+  log:    {label:"Log",    cls:"admin",  dotCls:"c-blue",  hint:"Default: 9999"},
+  admin:  {label:"Admin",  cls:"admin",  dotCls:"c-blue",  hint:"Default: 0000"},
+};
+
+const unlocked={pickup:false,restock:false,log:false,admin:false};
+let currentMode=null, pinTarget=null, pinCallback=null, pinBuf="";
+let selP=null, selR=null, purpose="", supplier="";
+let SCRIPT_URL=localStorage.getItem("pcfb_script_url")||"";
+let alertEmails=JSON.parse(localStorage.getItem("pcfb_alert_emails")||"[]");
+let alertSettings=JSON.parse(localStorage.getItem("pcfb_alert_settings")||'{"stock":true,"out":true,"expiry":true,"expired":true,"days":21}');
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init(){
+  renderItems("p");renderItems("r");
+  updateStats();renderHistory();updateTabLocks();
+}
+
+function updateTabLocks(){
+  ["pickup","restock","log"].forEach(t=>{
+    document.getElementById("tl"+t.charAt(0).toUpperCase()+t.slice(1)).textContent=unlocked[t]?"🔓":"🔒";
+    document.getElementById("tab"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("unlocked-tab",unlocked[t]);
+  });
+}
+
+function tabClick(t){unlocked[t]?showContent(t):requestPin(t,()=>showContent(t));}
+
+function showContent(tab){
+  currentMode=tab;
+  ["landing","pickup","restock","log"].forEach(m=>document.getElementById(m+"Mode").classList.toggle("hidden",m!==tab));
+  document.getElementById("pinOverlay").classList.add("hidden");
+  ["tabPickup","tabRestock","tabLog"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  document.getElementById("tab"+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add("active");
+  document.getElementById("headerTitle").textContent=tab==="pickup"?"PCFB Item Pickup":tab==="restock"?"PCFB Restock":"PCFB Activity Log";
+  if(tab==="log"){
+    renderHistory();
+    document.getElementById("adminSection").classList.toggle("hidden",!unlocked.admin);
+    document.getElementById("logLockBtn").classList.toggle("hidden",unlocked.admin);
+    if(unlocked.admin) loadAlertUI();
+  }
+  updateTabLocks();
+}
+
+// ── PIN ───────────────────────────────────────────────────────────────────────
+function requestPin(target,callback){
+  pinTarget=target;pinCallback=callback;pinBuf="";
+  document.getElementById("pinErr").textContent="";
+  const m=PIN_META[target];
+  document.getElementById("pinBadge").textContent=m.label+" Access";
+  document.getElementById("pinBadge").className="pin-badge "+m.cls;
+  document.getElementById("pinTitle").textContent="Enter "+m.label+" PIN";
+  document.getElementById("pinSubtitle").textContent="Enter your 4-digit PIN to continue";
+  document.getElementById("pinHint").textContent=m.hint;
+  updateDots();
+  ["landingMode","pickupMode","restockMode","logMode"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  document.getElementById("pinOverlay").classList.remove("hidden");
+}
+
+function pinPress(k){
+  if(k==="cancel"){
+    document.getElementById("pinOverlay").classList.add("hidden");
+    if(!currentMode){document.getElementById("landingMode").classList.remove("hidden");["tabPickup","tabRestock","tabLog"].forEach(id=>document.getElementById(id).classList.remove("active"));}
+    else showContent(currentMode);
+    pinBuf="";updateDots();return;
+  }
+  if(k==="del"){pinBuf=pinBuf.slice(0,-1);updateDots();return;}
+  if(pinBuf.length>=4)return;
+  pinBuf+=k;updateDots();
+  if(pinBuf.length===4){
+    setTimeout(()=>{
+      if(pinBuf===PINS[pinTarget]()){
+        unlocked[pinTarget]=true;pinBuf="";updateDots();
+        document.getElementById("pinOverlay").classList.add("hidden");
+        updateTabLocks();
+        if(pinCallback){pinCallback();pinCallback=null;}
+      } else {
+        for(let i=0;i<4;i++){const d=document.getElementById("pd"+i);d.classList.remove("filled");d.classList.add("err");}
+        document.getElementById("pinErr").textContent="Incorrect PIN. Try again.";
+        setTimeout(()=>{pinBuf="";document.querySelectorAll(".pin-dot").forEach(d=>d.classList.remove("err"));updateDots();},900);
+      }
+    },120);
+  }
+}
+
+function updateDots(){
+  const m=pinTarget?PIN_META[pinTarget]:{dotCls:""};
+  for(let i=0;i<4;i++){const d=document.getElementById("pd"+i);d.classList.remove("err","c-red","c-green","c-blue","filled");if(i<pinBuf.length)d.classList.add("filled",m.dotCls);}
+}
+
+function lockTab(tab){
+  unlocked[tab]=false;if(tab==="log")unlocked.admin=false;
+  currentMode=null;
+  ["landingMode","pickupMode","restockMode","logMode"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  document.getElementById("landingMode").classList.remove("hidden");
+  document.getElementById("pinOverlay").classList.add("hidden");
+  ["tabPickup","tabRestock","tabLog"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  updateTabLocks();document.getElementById("headerTitle").textContent="PCFB Inventory";
+}
+
+function lockAll(){
+  Object.keys(unlocked).forEach(k=>unlocked[k]=false);
+  currentMode=null;
+  ["landingMode","pickupMode","restockMode","logMode"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  document.getElementById("landingMode").classList.remove("hidden");
+  document.getElementById("pinOverlay").classList.add("hidden");
+  ["tabPickup","tabRestock","tabLog"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  updateTabLocks();document.getElementById("headerTitle").textContent="PCFB Inventory";
+}
+
+function unlockAdmin(){
+  requestPin("admin",()=>{
+    document.getElementById("adminSection").classList.remove("hidden");
+    document.getElementById("logLockBtn").classList.add("hidden");
+    if(SCRIPT_URL)document.getElementById("scriptUrlAdmin").value=SCRIPT_URL;
+    loadAlertUI();
+  });
+}
+
+// ── Inventory helpers ─────────────────────────────────────────────────────────
+function getStatus(it){
+  if(it.stock<=0)return{cls:"out"};
+  if(it.stock<=it.reorder)return{cls:"reorder"};
+  if(it.stock<=it.reorder*1.5)return{cls:"low"};
+  return{cls:"ok"};
+}
+function updateStats(){
+  document.getElementById("statLow").textContent=ITEMS.filter(i=>i.stock>0&&i.stock<=i.reorder).length;
+  document.getElementById("statOut").textContent=ITEMS.filter(i=>i.stock<=0).length;
+}
+function renderItems(pfx){
+  const q=(document.getElementById(pfx==="p"?"pSearch":"rSearch")||{value:""}).value.toLowerCase();
+  const items=ITEMS.filter(i=>!q||i.name.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q));
+  const el=document.getElementById(pfx==="p"?"pList":"rList");
+  const sel=pfx==="p"?selP:selR;
+  const rm=pfx==="r"?" rm":"";
+  if(!items.length){el.innerHTML='<div class="no-results">No items found</div>';return;}
+  el.innerHTML=items.map(it=>{
+    const st=getStatus(it);const s=sel&&sel.id===it.id?"selected":"";
+    return`<div class="item-card${rm} ${s}" onclick="selItem('${it.id}','${pfx}')" id="${pfx}c-${it.id}">
+      <div class="item-dot" id="${pfx}d-${it.id}"></div>
+      <div class="item-info"><div class="item-name">${it.name}</div><div class="item-meta">${it.cat} &bull; ${it.unit}${it.expiry&&it.expiry!=="N/A"?' &bull; exp: '+it.expiry:""}</div></div>
+      <span class="stock-badge ${st.cls}">${it.stock} left</span></div>`;
+  }).join("");
+}
+function selItem(id,pfx){
+  const it=ITEMS.find(i=>i.id===id);
+  if(pfx==="p"){selP=it;document.getElementById("pUnit").textContent=it.unit+"(s)";document.getElementById("pQty").max=it.stock;}
+  else{selR=it;document.getElementById("rUnit").textContent=it.unit+"(s)";}
+  document.querySelectorAll(`[id^="${pfx}c-"]`).forEach(c=>c.classList.remove("selected"));
+  document.querySelectorAll(`[id^="${pfx}d-"]`).forEach(d=>{d.style.background="";d.style.borderColor="";});
+  const card=document.getElementById(`${pfx}c-${id}`);const dot=document.getElementById(`${pfx}d-${id}`);
+  if(card)card.classList.add("selected");
+  if(dot){dot.style.background=pfx==="r"?"#1e8449":"#C0392B";dot.style.borderColor=pfx==="r"?"#1e8449":"#C0392B";}
+}
+function chQty(pfx,d){
+  const el=document.getElementById(pfx==="p"?"pQty":"rQty");
+  const item=pfx==="p"?selP:selR;
+  let v=Math.max(1,parseInt(el.value||1)+d);
+  if(pfx==="p"&&item)v=Math.min(v,item.stock);
+  el.value=v;
+}
+function selChip(el,type,val){
+  const cid=type==="purpose"?"purposeChips":"supplierChips";
+  document.querySelectorAll("#"+cid+" .chip").forEach(c=>c.classList.remove("active","gactive"));
+  el.classList.add(type==="supplier"?"gactive":"active");
+  if(type==="purpose"){purpose=val;document.getElementById("purposeOther").style.display=val==="Other"?"block":"none";}
+  else{supplier=val;document.getElementById("supplierOther").style.display=val==="Other"?"block":"none";}
+}
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display="block";setTimeout(()=>el.style.display="none",4000);}
+function pad2(n){return String(n).padStart(2,"0");}
+function ts(){const d=new Date();return`${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;}
+function genId(p){return p+Date.now().toString().slice(-6);}
+
+// ── Alert check: called after every pickup/restock ────────────────────────────
+// Returns array of alert objects if any conditions met — also fires to Sheets
+function checkAlerts(changedItem){
+  const alerts=[];
+  const s=alertSettings;
+  // Stock alerts for changed item
+  if(s.out&&changedItem.stock<=0)
+    alerts.push({type:"out_of_stock",itemId:changedItem.id,itemName:changedItem.name,stock:changedItem.stock,reorder:changedItem.reorder,unit:changedItem.unit});
+  else if(s.stock&&changedItem.stock>0&&changedItem.stock<=changedItem.reorder)
+    alerts.push({type:"low_stock",itemId:changedItem.id,itemName:changedItem.name,stock:changedItem.stock,reorder:changedItem.reorder,unit:changedItem.unit});
+  return alerts;
+}
+
+async function syncSheets(rec){
+  if(!SCRIPT_URL)return false;
+  try{await fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(rec)});return true;}
+  catch(e){return false;}
+}
+function saveToLog(entry){
+  const log=JSON.parse(localStorage.getItem("pcfb_log")||"[]");
+  log.unshift(entry);localStorage.setItem("pcfb_log",JSON.stringify(log.slice(0,300)));
+}
+
+// ── Submit pickup ─────────────────────────────────────────────────────────────
+async function submitPickup(){
+  if(!selP){showErr("pErr","Please select an item.");return;}
+  const qty=parseInt(document.getElementById("pQty").value)||1;
+  const name=document.getElementById("pName").value.trim();
+  const station=document.getElementById("pStation").value;
+  const purp=purpose==="Other"?document.getElementById("purposeOther").value.trim():purpose;
+  const notes=document.getElementById("pNotes").value.trim();
+  if(!name){showErr("pErr","Please enter your name.");return;}
+  if(!station){showErr("pErr","Please select a station.");return;}
+  if(!purp){showErr("pErr","Please select a purpose.");return;}
+  if(qty>selP.stock){showErr("pErr",`Only ${selP.stock} available.`);return;}
+  const btn=document.getElementById("pBtn");btn.disabled=true;btn.textContent="Submitting...";
+  const rec={type:"pickup",logId:genId("L"),timestamp:ts(),itemId:selP.id,itemName:selP.name,category:selP.cat,unit:selP.unit,qty,takenBy:name,station,purpose:purp,notes,returned:"No"};
+  const synced=await syncSheets(rec);
+  saveToLog(rec);
+  selP.stock-=qty;updateStats();renderItems("p");
+
+  // Check for stock alerts after stock update
+  const alerts=checkAlerts(selP);
+  if(alerts.length&&SCRIPT_URL){
+    syncSheets({type:"alert",alerts,emails:alertEmails,alertSettings});
+  }
+
+  btn.disabled=false;btn.textContent="Log Pickup";
+  document.getElementById("pickupForm").style.display="none";
+  document.getElementById("pSuccess").style.display="block";
+  document.getElementById("pSuccessDetail").innerHTML=`<strong>${qty} &times; ${rec.itemName}</strong> taken by ${name}<br>${station} &bull; ${purp}<br><br>${synced?"&#9989; Synced to Google Sheets":"&#128190; Saved locally"}`;
+
+  // Show inline alert notice
+  const notice=document.getElementById("pAlertNotice");
+  if(alerts.length){
+    const msg=alerts.map(a=>a.type==="out_of_stock"?`&#9888; ${a.itemName} is now OUT OF STOCK`:`&#9888; ${a.itemName} is low — only ${a.stock} ${a.unit}(s) left`).join("<br>");
+    notice.innerHTML=msg+(alertEmails.length?`<br><small>Alert email sent to ${alertEmails.length} recipient(s)</small>`:"<br><small>Add alert recipients in Admin settings to receive emails</small>");
+    notice.style.display="block";
+  } else notice.style.display="none";
+}
+
+function resetPickup(){
+  selP=null;purpose=[];
+  ["pName","pNotes"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("pStation").value="";document.getElementById("pQty").value=1;
+  document.getElementById("pUnit").textContent="";document.getElementById("pSearch").value="";
+  document.getElementById("purposeOther").style.display="none";
+  document.querySelectorAll("#purposeChips .chip").forEach(c=>c.classList.remove("active"));
+  document.getElementById("pickupForm").style.display="block";document.getElementById("pSuccess").style.display="none";
+  renderItems("p");
+}
+
+// ── Submit restock ────────────────────────────────────────────────────────────
+async function submitRestock(){
+  if(!selR){showErr("rErr","Please select an item.");return;}
+  const qty=parseInt(document.getElementById("rQty").value)||1;
+  const name=document.getElementById("rName").value.trim();
+  const sup=supplier==="Other"?document.getElementById("supplierOther").value.trim():supplier;
+  const expiry=document.getElementById("rExpiry").value.trim()||"N/A";
+  const notes=document.getElementById("rNotes").value.trim();
+  if(!name){showErr("rErr","Please enter your name.");return;}
+  if(!sup){showErr("rErr","Please select a supplier / source.");return;}
+  const btn=document.getElementById("rBtn");btn.disabled=true;btn.textContent="Saving...";
+  const rec={type:"restock",logId:genId("R"),timestamp:ts(),itemId:selR.id,itemName:selR.name,category:selR.cat,unit:selR.unit,qty,restockedBy:name,supplier:sup,expiry,notes};
+  const synced=await syncSheets(rec);
+  saveToLog(rec);
+  // Update expiry on item
+  if(expiry&&expiry!=="N/A") selR.expiry=expiry;
+  const prev=selR.stock;selR.stock+=qty;updateStats();renderItems("r");
+  btn.disabled=false;btn.textContent="Confirm Restock";
+  document.getElementById("rForm").style.display="none";
+  document.getElementById("rSuccess").style.display="block";
+  document.getElementById("rSuccessDetail").innerHTML=`<strong>+${qty} &times; ${rec.itemName}</strong> by ${name}<br>Source: ${sup} &bull; Expiry: ${expiry}<br>Stock: ${prev} &rarr; <strong>${selR.stock}</strong><br><br>${synced?"&#9989; Synced to Google Sheets":"&#128190; Saved locally"}`;
+}
+
+function resetRestock(){
+  selR=null;supplier="";
+  ["rName","rNotes","rExpiry"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("rQty").value=1;document.getElementById("rUnit").textContent="";
+  document.getElementById("rSearch").value="";document.getElementById("supplierOther").style.display="none";
+  document.querySelectorAll("#supplierChips .chip").forEach(c=>c.classList.remove("active","gactive"));
+  document.getElementById("rForm").style.display="block";document.getElementById("rSuccess").style.display="none";
+  renderItems("r");
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory(){
+  const log=JSON.parse(localStorage.getItem("pcfb_log")||"[]");
+  const el=document.getElementById("historyList");
+
+  // Activity rows (or empty state)
+  if(!log.length){
+    el.innerHTML='<div style="text-align:center;color:#aaa;padding:16px 0 8px;font-size:14px">No activity yet</div>';
+  } else {
+    el.innerHTML=log.slice(0,40).map(e=>{
+      const isR=e.type==="restock";
+      const sub=isR?`${e.restockedBy} &bull; ${e.supplier}`:`${e.takenBy} &bull; ${e.station}`;
+      return`<div class="history-row">
+        <div class="h-icon ${isR?"h-restock":"h-pickup"}">${isR?"+":"&#8595;"}</div>
+        <div class="h-body"><div class="h-name">${e.itemName}</div><div class="h-meta">${e.timestamp} &bull; ${sub}</div></div>
+        <div class="h-qty ${isR?"h-plus":"h-minus"}">${isR?"+":"-"}${e.qty} ${e.unit}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // Admin unlock button — always shown when admin is not yet unlocked
+  if(!unlocked.admin){
+    el.innerHTML+=`
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;text-align:center">
+        <div style="font-size:12px;color:#aaa;margin-bottom:10px">Brigade administrators only</div>
+        <button onclick="unlockAdmin()" style="padding:12px 24px;border:1.5px solid #2471a3;color:#2471a3;background:#fff;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;width:100%">
+          &#128737;&nbsp; Unlock Admin Settings
+        </button>
+      </div>`;
+  }
+}
+
+// ── Alert UI helpers ──────────────────────────────────────────────────────────
+function loadAlertUI(){
+  // Load toggles
+  document.getElementById("alertStock").checked=alertSettings.stock!==false;
+  document.getElementById("alertOut").checked=alertSettings.out!==false;
+  document.getElementById("alertExpiry").checked=alertSettings.expiry!==false;
+  document.getElementById("alertExpired").checked=alertSettings.expired!==false;
+  document.getElementById("expiryDays").value=alertSettings.days||21;
+  renderEmailTags();
+}
+
+function renderEmailTags(){
+  const el=document.getElementById("emailTagList");
+  if(!alertEmails.length){el.innerHTML='<div style="font-size:12px;color:#aaa;margin-bottom:4px">No recipients added yet</div>';return;}
+  el.innerHTML=alertEmails.map((e,i)=>
+    `<span class="email-tag">${e}<span class="rm-tag" onclick="removeEmail(${i})">&#10005;</span></span>`
+  ).join("");
+}
+
+function addEmail(){
+  const v=document.getElementById("newEmailInput").value.trim().toLowerCase();
+  const m=document.getElementById("msgEmail");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){m.style.color="#C0392B";m.textContent="Please enter a valid email address.";return;}
+  if(alertEmails.includes(v)){m.style.color="#e67e22";m.textContent="That address is already in the list.";return;}
+  alertEmails.push(v);
+  localStorage.setItem("pcfb_alert_emails",JSON.stringify(alertEmails));
+  document.getElementById("newEmailInput").value="";
+  m.style.color="#1e8449";m.textContent="&#10003; Added.";
+  setTimeout(()=>m.textContent="",2000);
+  renderEmailTags();
+  // Sync recipient list to Sheets
+  if(SCRIPT_URL) syncSheets({type:"update_settings",alertEmails,alertSettings});
+}
+
+function removeEmail(i){
+  alertEmails.splice(i,1);
+  localStorage.setItem("pcfb_alert_emails",JSON.stringify(alertEmails));
+  renderEmailTags();
+  if(SCRIPT_URL) syncSheets({type:"update_settings",alertEmails,alertSettings});
+}
+
+function saveAlertSettings(){
+  alertSettings={
+    stock:document.getElementById("alertStock").checked,
+    out:document.getElementById("alertOut").checked,
+    expiry:document.getElementById("alertExpiry").checked,
+    expired:document.getElementById("alertExpired").checked,
+    days:parseInt(document.getElementById("expiryDays").value)||21,
+  };
+  localStorage.setItem("pcfb_alert_settings",JSON.stringify(alertSettings));
+  if(SCRIPT_URL) syncSheets({type:"update_settings",alertEmails,alertSettings});
+}
+
+async function sendTestAlert(){
+  const m=document.getElementById("msgTestAlert");
+  if(!SCRIPT_URL){m.style.color="#C0392B";m.textContent="No script URL configured.";return;}
+  if(!alertEmails.length){m.style.color="#C0392B";m.textContent="Add at least one recipient first.";return;}
+  m.style.color="#888";m.textContent="Sending...";
+  const sent=await syncSheets({type:"test_alert",emails:alertEmails,brigade:"Point Cook CFA"});
+  if(sent){m.style.color="#1e8449";m.textContent="&#10003; Test alert sent! Check your inbox.";}
+  else{m.style.color="#C0392B";m.textContent="Send failed. Check the script URL.";}
+  setTimeout(()=>m.textContent="",4000);
+}
+
+// ── PIN management ────────────────────────────────────────────────────────────
+function changePin(type){
+  const v=document.getElementById("new"+type.charAt(0).toUpperCase()+type.slice(1)+"Pin").value.trim();
+  const m=document.getElementById("msg"+type.charAt(0).toUpperCase()+type.slice(1)+"Pin");
+  if(!/^\d{4}$/.test(v)){m.style.color="#C0392B";m.textContent="Must be exactly 4 digits.";return;}
+  localStorage.setItem("pcfb_pin_"+type,v);
+  m.style.color="#1e8449";m.textContent="&#10003; PIN updated.";
+  document.getElementById("new"+type.charAt(0).toUpperCase()+type.slice(1)+"Pin").value="";
+  setTimeout(()=>m.textContent="",3000);
+}
+
+// ── Script URL ────────────────────────────────────────────────────────────────
+function saveScript(src){
+  const id=src==="banner"?"scriptUrlBanner":"scriptUrlAdmin";
+  const v=document.getElementById(id).value.trim();
+  if(!v)return;
+  SCRIPT_URL=v;localStorage.setItem("pcfb_script_url",v);
+  document.getElementById("configNote").classList.add("hidden");
+  if(src==="admin"){const m=document.getElementById("msgScript");m.style.color="#1e8449";m.textContent="&#10003; URL saved.";setTimeout(()=>m.textContent="",2500);}
+}
+
+init();
+</script>
+</body>
+</html>
